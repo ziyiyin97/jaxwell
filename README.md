@@ -22,7 +22,7 @@ for the electric field `E` via the API
 x, err = jaxwell.solve(params, z, b)
 ```
 
-where `E → x`, `ω²ε → z`, `-iωJ → b`, 
+where `E → x`, `ω²ε → z`, `-iωJ → b`,
 `params` controls how the solve proceeds iteratively, and
 `err` is the error in the solution.
 
@@ -32,13 +32,11 @@ assumes `μ = 1` everywhere,
 and implements stretched-coordinate perfectly matched layers (SC-PML)
 for absorbing boundary conditions.
 
-You can install Jaxwell with `pip install git+https://github.com/jan-david-fischbach/jaxwell.git` 
-but the easiest way to get started is to go straight to the example 
+You can install Jaxwell with `pip install git+https://github.com/jan-david-fischbach/jaxwell.git`
+but the easiest way to get started is to go straight to the example
 [colaboratory notebook](https://colab.research.google.com/github/jan-david-fischbach/jaxwell/blob/main/example/colab.ipynb).
 
 References:
 
 - PMLs and diagonalization: [Shin2012] W. Shin and S. Fan. “Choice of the perfectly matched layer boundary condition for frequency-domain Maxwell's equations solvers.” Journal of Computational Physics 231 (2012): 3406–31
 - COCG algorithm: [Gu2014] X. Gu, T. Huang, L. Li, H. Li, T. Sogabe and M. Clemens, "Quasi-Minimal Residual Variants of the COCG and COCR Methods for Complex Symmetric Linear Systems in Electromagnetic Simulations," in IEEE Transactions on Microwave Theory and Techniques, vol. 62, no. 12, pp. 2859-2867, Dec. 2014
-
-

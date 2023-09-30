@@ -3,3 +3,4 @@ build
 jaxwell.egg-info
 venv
 *__pycache__
+docs/_build
