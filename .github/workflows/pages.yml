@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - build-system
   workflow_dispatch:
 
 jobs:
