@@ -41,3 +41,5 @@ build:
 
 docs:
 	jb build docs
+
+.PHONY: docs
