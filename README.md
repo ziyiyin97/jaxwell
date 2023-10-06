@@ -34,7 +34,7 @@ for absorbing boundary conditions.
 
 You can install Jaxwell with `pip install git+https://github.com/jan-david-fischbach/jaxwell.git`
 but the easiest way to get started is to go straight to the example
-[colaboratory notebook](https://colab.research.google.com/github/jan-david-fischbach/jaxwell/blob/main/example/colab.ipynb).
+[colaboratory notebook](https://colab.research.google.com/github/jan-david-fischbach/jaxwell/blob/main/docs/colab.ipynb).
 
 References:
 
