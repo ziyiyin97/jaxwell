@@ -41,7 +41,7 @@ def plot_field(field, mask=True, vmax=0.1):
 
 
 def center_px(shape):
-    return np.array([s / 2 - 0.49 for s in shape])
+    return np.array([s / 2 - 0.5 for s in shape])
 
 
 def center_fl(shape, dx):
@@ -97,7 +97,9 @@ def to_spherical_coordinates(x, y, z, k0, center):
 
 x = y = z = np.arange(num_pixels) * dx
 cent = center_fl(shape, dx)
-positions = onp.meshgrid(x, y, z)
+cent = cent.at[0].set(cent[0] + 10)  # to add asymmetry
+print(cent)
+positions = onp.meshgrid(x, y, z, indexing="ij")
 positions_spherical = to_spherical_coordinates(*positions, k0 / dx, cent)
 
 params = jaxwell.Params(
@@ -107,11 +109,11 @@ params = jaxwell.Params(
     max_iters=int(1e6),
 )
 
-sphere = onp.array(structure(R, shape))
+sphere = onp.array(structure(R, shape, center=cent / dx))
 eps_sphere = [
     sphere * (eps_fg - eps_bg) + eps_bg
 ] * 3  # not super accurate (do subpixel smoothing)
-mode = basis[0]
+mode = basis[6]
 field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
 field_inc = onp.moveaxis(field_inc, -1, 0)
 # %%
