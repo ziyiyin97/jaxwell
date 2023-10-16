@@ -11,17 +11,41 @@ import jax.numpy as np
 import jaxwell
 import matplotlib.pyplot as plt
 import numpy as onp
-from util import split_int
 import treams as tr
-from skimage import measure
 
 # import treams
 
 # Check to make sure double-precision is enabled.
 assert np.zeros((1,), np.float64).dtype == np.float64
 
+
+# %%
+def plot_field(field, mask=True, vmax=0.1):
+    if mask:
+        field = [onp.where(eps_sphere[0] < 3, s, onp.nan) for s in field]
+    plt.figure(figsize=(6, 2))
+    for i in range(3):
+        plt.subplot(131 + i)
+        plt.pcolormesh(
+            positions[0][:, :, 0],
+            positions[1][:, :, 0],
+            onp.abs(field[i][:, :, num_pixels // 2]),
+            vmin=0,
+            vmax=vmax,
+        )
+        plt.axis("off")
+
+
 # %%
 # Build the structure, source, and loss sub-models.
+
+
+def center_px(shape):
+    return np.array([s / 2 - 0.49 for s in shape])
+
+
+def center_fl(shape, dx):
+    return dx * center_px(shape)
 
 
 def structure(radius, shape, center: tuple[int, int, int] | None = None):
@@ -37,7 +61,7 @@ def structure(radius, shape, center: tuple[int, int, int] | None = None):
         If `None` the sphere is centered in the simulation region
     """
     if center is None:
-        center = tuple(split_int(s)[0] for s in shape)
+        center = center_px(shape)
 
     center = np.array(center).reshape((-1,) + (1,) * 3)
     arr = np.linalg.norm(np.indices(shape) - center, axis=0)
@@ -46,21 +70,7 @@ def structure(radius, shape, center: tuple[int, int, int] | None = None):
     )
 
 
-def to_spherical_coordinates(x, y, z, k0):
-    """Converts to spherical coordinates in units of k0"""
-    r = onp.sqrt(x**2 + y**2 + z**2)
-    theta = onp.arccos(z / r)
-    phi = onp.sign(y) * onp.arccos(x / onp.sqrt(x**2 + y**2))
-    theta[r == 0] = 0
-    phi[r == 0] = 0
-    return r * k0, theta, phi
-
-
 # %%
-
-
-c = 299792458.0
-
 eps_bg = 2
 eps_fg = 12
 dx = 40
@@ -70,11 +80,25 @@ basis = tr.SphericalWaveBasis.default(3)
 num_pixels = 80
 R = num_pixels / 2 / 2  # Radius of the sphere
 print(f"Radius: {R}")
+shape = (num_pixels,) * 3
 
-x = np.arange(num_pixels) * dx
-x = y = z = x - np.mean(x)
+
+# %%
+def to_spherical_coordinates(x, y, z, k0, center):
+    """Converts to spherical coordinates in units of k0"""
+    x, y, z = (comp - cent for comp, cent in zip([x, y, z], center))
+    r = onp.sqrt(x**2 + y**2 + z**2)
+    theta = onp.arccos(z / r)
+    phi = onp.sign(y) * onp.arccos(x / onp.sqrt(x**2 + y**2))
+    theta[r == 0] = 0
+    phi[r == 0] = 0
+    return r * k0, theta, phi
+
+
+x = y = z = np.arange(num_pixels) * dx
+cent = center_fl(shape, dx)
 positions = onp.meshgrid(x, y, z)
-positions_spherical = to_spherical_coordinates(*positions, k0 / dx)
+positions_spherical = to_spherical_coordinates(*positions, k0 / dx, cent)
 
 params = jaxwell.Params(
     pml_ths=((10, 10), (10, 10), (10, 10)),
@@ -83,52 +107,28 @@ params = jaxwell.Params(
     max_iters=int(1e6),
 )
 
-sphere = onp.array(structure(R, (num_pixels,) * 3))
+sphere = onp.array(structure(R, shape))
 eps_sphere = [
     sphere * (eps_fg - eps_bg) + eps_bg
 ] * 3  # not super accurate (do subpixel smoothing)
-mode = basis[6]
+mode = basis[0]
 field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
-
+field_inc = onp.moveaxis(field_inc, -1, 0)
 # %%
-b = onp.array([-(omega**2) * (eps_sphere[0] - eps_bg)] * 3) * onp.moveaxis(
-    field_inc, -1, 0
+plot_field(field_inc)
+# %%
+plot_field(eps_sphere, mask=False, vmax=None)
+plt.colorbar()
+# %%
+b = (
+    onp.array([-(omega**2) * (eps_sphere[0] - eps_bg)] * 3) * field_inc
 )  # make sure to do propper decomposition later
 b = tuple(b)
 
 z = tuple([omega**2 * eps for eps in eps_sphere])
 # %%
 field_scat, err = jaxwell.solve(params, z, b)
+
 # %%
-pure_scat = [onp.where(eps_sphere[0] < 3, s, onp.nan) for s in field_scat]
-plt.figure(figsize=(6, 2))
-for i in range(3):
-    plt.subplot(131 + i)
-    plt.pcolormesh(
-        positions[0][:, :, 0],
-        positions[1][:, :, 0],
-        onp.abs(pure_scat[i][:, :, num_pixels // 2]),
-        vmin=0,
-        vmax=0.1,
-    )
-    plt.axis("off")
-# %%
-
-eyeballs = True
-if eyeballs:
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection="3d")
-    verts, faces, normals, values = measure.marching_cubes(sphere, 0.5)
-    ax.plot_trisurf(
-        verts[:, 0],
-        verts[:, 1],
-        faces,
-        verts[:, 2],
-        cmap="Spectral",
-        antialiased=False,
-        linewidth=0.0,
-    )
-    plt.show()
-
-
+plot_field(field_scat)
 # %%
