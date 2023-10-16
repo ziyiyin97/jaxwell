@@ -11,9 +11,7 @@ import jax.numpy as np
 import jaxwell
 import matplotlib.pyplot as plt
 import numpy as onp
-from util import split_int
 import treams as tr
-from skimage import measure
 
 # import treams
 
@@ -37,7 +35,7 @@ def structure(radius, shape, center: tuple[int, int, int] | None = None):
         If `None` the sphere is centered in the simulation region
     """
     if center is None:
-        center = tuple(split_int(s)[0] for s in shape)
+        center = tuple(s / 2 - 0.5 for s in shape)
 
     center = np.array(center).reshape((-1,) + (1,) * 3)
     arr = np.linalg.norm(np.indices(shape) - center, axis=0)
@@ -112,23 +110,6 @@ for i in range(3):
         vmax=0.1,
     )
     plt.axis("off")
-# %%
-
-eyeballs = True
-if eyeballs:
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection="3d")
-    verts, faces, normals, values = measure.marching_cubes(sphere, 0.5)
-    ax.plot_trisurf(
-        verts[:, 0],
-        verts[:, 1],
-        faces,
-        verts[:, 2],
-        cmap="Spectral",
-        antialiased=False,
-        linewidth=0.0,
-    )
-    plt.show()
 
 
 # %%
