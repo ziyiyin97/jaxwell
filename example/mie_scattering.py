@@ -1,3 +1,4 @@
+# %%
 # ruff: noqa: E402
 # %%
 # This is needed to enable JAX's double-precision mode, see
@@ -113,7 +114,7 @@ sphere = onp.array(structure(R, shape, center=cent / dx))
 eps_sphere = [
     sphere * (eps_fg - eps_bg) + eps_bg
 ] * 3  # not super accurate (do subpixel smoothing)
-mode = basis[6]
+mode = basis[0]
 field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
 field_inc = onp.moveaxis(field_inc, -1, 0)
 # %%
