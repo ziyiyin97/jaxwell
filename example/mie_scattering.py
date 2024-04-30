@@ -129,7 +129,6 @@ field_inc = onp.moveaxis(field_inc, -1, 0)
 plot_field(field_inc)
 # %%
 plot_field(eps_sphere, mask=False, vmax=None)
-plt.colorbar()
 # %%
 b = (
     onp.array([-(omega**2) * (eps_sphere[0] - eps_bg)] * 3) * field_inc
