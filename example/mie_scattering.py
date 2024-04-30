@@ -5,6 +5,7 @@
 # https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html#Double-(64bit)-precision
 # for additional info.
 import jax
+
 jax.config.update("jax_enable_x64", True)
 
 
@@ -23,17 +24,20 @@ assert np.zeros((1,), np.float64).dtype == np.float64
 
 
 # %%
-def plot_field(field, mask=True, vmax=0.1, name="out"):
+def plot_field(field, mask=False, abs=True, vmax=0.1, name="out"):
     if mask:
         field = [onp.where(eps_sphere[0] < 3, s, onp.nan) for s in field]
     fig, axs = plt.subplots(1, 4, figsize=(6.3, 2), width_ratios=[2, 2, 2, 0.3])
     for i, ax in enumerate(axs[:3]):
+        f = field[i][:, :, num_pixels // 2]
+
         im = ax.pcolormesh(
             positions[0][:, :, 0],
             positions[1][:, :, 0],
-            onp.abs(field[i][:, :, num_pixels // 2]),
-            vmin=0,
+            onp.abs(f) if abs else onp.imag(f),
+            vmin=0 if abs else -vmax,
             vmax=vmax,
+            cmap="viridis" if abs else "RdBu",
         )
         ax.axis("off")
 
@@ -47,7 +51,7 @@ def plot_field(field, mask=True, vmax=0.1, name="out"):
 
 def center_px(shape):
     """center in units of px"""
-    return np.array([s / 2 - 0.5 for s in shape])
+    return onp.array([s / 2 - 0.5 for s in shape])
 
 
 def center_fl(shape, dx) -> float:
@@ -70,23 +74,24 @@ def structure(radius, shape, center: tuple[int, int, int] | None = None):
     if center is None:
         center = center_px(shape)
 
-    center = np.array(center).reshape((-1,) + (1,) * 3)
-    arr = np.linalg.norm(np.indices(shape) - center, axis=0)
+    center = onp.array(center).reshape((-1,) + (1,) * 3)
+    arr = onp.linalg.norm(np.indices(shape) - center, axis=0)
     return 0.5 * (
         (arr <= radius - 1) * 0.25 + (arr <= radius) * 0.5 + (arr <= radius + 1) * 0.25
     )
 
 
 # %%
-eps_bg = 2
+eps_bg = 1
 eps_fg = 12
 dx = 40
-wlen = dx * 15
+wlen = dx * 20
 
 k0 = omega = 2 * onp.pi / wlen
 basis = tr.SphericalWaveBasis.default(3)
-num_pixels = 140
-R = 20  # Radius of the sphere
+# print(basis)
+num_pixels = 80
+R = 15  # Radius of the sphere
 print(f"Radius: {R}")
 shape = (num_pixels,) * 3
 
@@ -103,13 +108,13 @@ def to_spherical_coordinates(x, y, z, k0, center):
     return r * k0, theta, phi
 
 
-x = y = z = np.arange(num_pixels) * dx
+x = y = z = onp.arange(num_pixels) * dx
 cent = center_fl(shape, dx)
-cent = cent.at[0].set(cent[0] + 0.1)  # to add asymmetry
+cent[0] = cent[0] + 1  # to add asymmetry
 print(cent)
 
 positions = onp.meshgrid(x, y, z, indexing="ij")
-positions_spherical = to_spherical_coordinates(*positions, k0 / dx, cent)
+positions_spherical = to_spherical_coordinates(*positions, k0, cent)
 
 params = jaxwell.Params(
     pml_ths=((10, 10), (10, 10), (10, 10)),
@@ -121,13 +126,26 @@ params = jaxwell.Params(
 sphere = onp.array(structure(R, shape, center=cent / dx))
 eps_sphere = [
     sphere * (eps_fg - eps_bg) + eps_bg
-] * 3  # not super accurate (do subpixel smoothing)
-mode = basis[0]
-field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
-field_inc = tr.special.vsw_rN(mode[1], mode[2], *positions_spherical)
+] * 3  # not super accurate (TODO subpixel smoothing)
+mode = basis[3]
+# field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
+field_inc_sph = tr.special.vsw_rN(mode[1], mode[2], *positions_spherical)
+
+
+pos_sph = onp.moveaxis(onp.array(positions_spherical), 0, -1)
+field_inc = onp.empty([num_pixels] * 3 + [3], dtype=complex)
+for ix in range(num_pixels):
+    for iy in range(num_pixels):
+        for iz in range(num_pixels):
+            vec = field_inc_sph[ix, iy, iz]
+            pos = pos_sph[ix, iy, iz]
+            field_inc[ix, iy, iz, :] = tr.special.vsph2car(vec, pos)
+
+field_inc_sph = onp.moveaxis(field_inc_sph, -1, 0)
 field_inc = onp.moveaxis(field_inc, -1, 0)
 # %%
-plot_field(field_inc, name="inc")
+plot_field(field_inc_sph, vmax=0.3, name="inc_sph", abs=True)
+plot_field(field_inc, vmax=0.3, name="inc", abs=False)
 # %%
 plot_field(eps_sphere, mask=False, vmax=None, name="eps")
 # %%
