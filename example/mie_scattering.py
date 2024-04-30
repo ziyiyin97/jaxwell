@@ -4,14 +4,14 @@
 # This is needed to enable JAX's double-precision mode, see
 # https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html#Double-(64bit)-precision
 # for additional info.
-from jax.config import config
+import jax
+jax.config.update("jax_enable_x64", True)
 
-import jaxwell.operators
 
-config.update("jax_enable_x64", True)
 # import jax
 import jax.numpy as np
 import jaxwell
+import jaxwell.operators
 import matplotlib.pyplot as plt
 import numpy as onp
 import treams as tr
@@ -23,7 +23,7 @@ assert np.zeros((1,), np.float64).dtype == np.float64
 
 
 # %%
-def plot_field(field, mask=True, vmax=0.1):
+def plot_field(field, mask=True, vmax=0.1, name="out"):
     if mask:
         field = [onp.where(eps_sphere[0] < 3, s, onp.nan) for s in field]
     fig, axs = plt.subplots(1, 4, figsize=(6.3, 2), width_ratios=[2, 2, 2, 0.3])
@@ -38,6 +38,7 @@ def plot_field(field, mask=True, vmax=0.1):
         ax.axis("off")
 
     fig.colorbar(im, cax=axs[-1])
+    plt.savefig(f"{name}.png")
 
 
 # %%
@@ -126,9 +127,9 @@ field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
 field_inc = tr.special.vsw_rN(mode[1], mode[2], *positions_spherical)
 field_inc = onp.moveaxis(field_inc, -1, 0)
 # %%
-plot_field(field_inc)
+plot_field(field_inc, name="inc")
 # %%
-plot_field(eps_sphere, mask=False, vmax=None)
+plot_field(eps_sphere, mask=False, vmax=None, name="eps")
 # %%
 b = (
     onp.array([-(omega**2) * (eps_sphere[0] - eps_bg)] * 3) * field_inc
@@ -140,7 +141,7 @@ z = tuple([omega**2 * eps for eps in eps_sphere])
 field_scat, err, curl = jaxwell.fdfd.solve_impl(z, b, params=params, incl_curl=True)
 
 # %%
-plot_field(field_scat, vmax=0.05)
+plot_field(field_scat, vmax=0.05, name="Escat")
 
 
 # %%
@@ -155,7 +156,7 @@ def curlE_dual(E):
 
 E = jaxwell.vecfield.from_tuple(field_scat)
 curl2 = jaxwell.vecfield.to_tuple(curlE_dual(E))
-plot_field(curl2, vmax=0.02)
+plot_field(curl2, vmax=0.02, name="curl2")
 # %%
-plot_field(curl, vmax=0.02)
+plot_field(curl, vmax=0.02, name="curl")
 # %%
