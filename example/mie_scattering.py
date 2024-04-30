@@ -6,6 +6,8 @@
 # for additional info.
 from jax.config import config
 
+import jaxwell.operators
+
 config.update("jax_enable_x64", True)
 # import jax
 import jax.numpy as np
@@ -24,28 +26,31 @@ assert np.zeros((1,), np.float64).dtype == np.float64
 def plot_field(field, mask=True, vmax=0.1):
     if mask:
         field = [onp.where(eps_sphere[0] < 3, s, onp.nan) for s in field]
-    plt.figure(figsize=(6, 2))
-    for i in range(3):
-        plt.subplot(131 + i)
-        plt.pcolormesh(
+    fig, axs = plt.subplots(1, 4, figsize=(6.3, 2), width_ratios=[2, 2, 2, 0.3])
+    for i, ax in enumerate(axs[:3]):
+        im = ax.pcolormesh(
             positions[0][:, :, 0],
             positions[1][:, :, 0],
             onp.abs(field[i][:, :, num_pixels // 2]),
             vmin=0,
             vmax=vmax,
         )
-        plt.axis("off")
+        ax.axis("off")
+
+    fig.colorbar(im, cax=axs[-1])
 
 
 # %%
-# Build the structure, source, and loss sub-models.
+# Build the structure and source
 
 
 def center_px(shape):
+    """center in units of px"""
     return np.array([s / 2 - 0.5 for s in shape])
 
 
-def center_fl(shape, dx):
+def center_fl(shape, dx) -> float:
+    """center in nm (float)"""
     return dx * center_px(shape)
 
 
@@ -75,11 +80,12 @@ def structure(radius, shape, center: tuple[int, int, int] | None = None):
 eps_bg = 2
 eps_fg = 12
 dx = 40
-wlen = 1550 / dx
+wlen = dx * 15
+
 k0 = omega = 2 * onp.pi / wlen
 basis = tr.SphericalWaveBasis.default(3)
-num_pixels = 80
-R = num_pixels / 2 / 2  # Radius of the sphere
+num_pixels = 140
+R = 20  # Radius of the sphere
 print(f"Radius: {R}")
 shape = (num_pixels,) * 3
 
@@ -98,8 +104,9 @@ def to_spherical_coordinates(x, y, z, k0, center):
 
 x = y = z = np.arange(num_pixels) * dx
 cent = center_fl(shape, dx)
-cent = cent.at[0].set(cent[0] + 10)  # to add asymmetry
+cent = cent.at[0].set(cent[0] + 0.1)  # to add asymmetry
 print(cent)
+
 positions = onp.meshgrid(x, y, z, indexing="ij")
 positions_spherical = to_spherical_coordinates(*positions, k0 / dx, cent)
 
@@ -116,6 +123,7 @@ eps_sphere = [
 ] * 3  # not super accurate (do subpixel smoothing)
 mode = basis[0]
 field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
+field_inc = tr.special.vsw_rN(mode[1], mode[2], *positions_spherical)
 field_inc = onp.moveaxis(field_inc, -1, 0)
 # %%
 plot_field(field_inc)
@@ -130,8 +138,25 @@ b = tuple(b)
 
 z = tuple([omega**2 * eps for eps in eps_sphere])
 # %%
-field_scat, err = jaxwell.solve(params, z, b)
+field_scat, err, curl = jaxwell.fdfd.solve_impl(z, b, params=params, incl_curl=True)
 
 # %%
-plot_field(field_scat)
+plot_field(field_scat, vmax=0.05)
+
+
+# %%
+def curlE_dual(E):
+    diff_fn = jaxwell.operators.spatial_diff
+    y = []
+    for i in range(3):
+        j, k = (i + 1) % 3, (i + 2) % 3
+        y.append(diff_fn(E[k], axis=j) - diff_fn(E[j], axis=k))
+    return jaxwell.vecfield.VecField(*y)
+
+
+E = jaxwell.vecfield.from_tuple(field_scat)
+curl2 = jaxwell.vecfield.to_tuple(curlE_dual(E))
+plot_field(curl2, vmax=0.02)
+# %%
+plot_field(curl, vmax=0.02)
 # %%

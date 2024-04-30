@@ -83,6 +83,7 @@ def solve_impl(
     params=Params(),
     monitor_fn=_default_monitor_fn,
     monitor_every_n=1000,
+    incl_curl=False,
 ):
     """Implementation of a FDFD solve.
 
@@ -126,6 +127,14 @@ def solve_impl(
         if err <= term_err:
             break
 
-    monitor_fn(unpre(x), errs)
+    x_out = unpre(x)
+    monitor_fn(x_out, errs)
 
-    return vecfield.to_tuple(unpre(x)), errs
+    output = (vecfield.to_tuple(x_out), errs)
+    if incl_curl:
+        return (
+            *output,
+            vecfield.to_tuple(operators.curl(x_out, params.pml_ths, pml_params)),
+        )
+
+    return output
