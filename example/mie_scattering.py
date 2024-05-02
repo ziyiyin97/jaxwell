@@ -4,6 +4,12 @@
 # This is needed to enable JAX's double-precision mode, see
 # https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html#Double-(64bit)-precision
 # for additional info.
+import os
+
+import jaxwell.utils
+
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+
 import jax
 
 jax.config.update("jax_enable_x64", True)
@@ -17,10 +23,8 @@ import matplotlib.pyplot as plt
 import numpy as onp
 import treams as tr
 
-# import treams
-
 # Check to make sure double-precision is enabled.
-assert np.zeros((1,), np.float64).dtype == np.float64
+assert jaxwell.utils.double_precision_enabled()
 
 
 # %%
@@ -76,22 +80,20 @@ def structure(radius, shape, center: tuple[int, int, int] | None = None):
 
     center = onp.array(center).reshape((-1,) + (1,) * 3)
     arr = onp.linalg.norm(np.indices(shape) - center, axis=0)
-    return 0.5 * (
-        (arr <= radius - 1) * 0.25 + (arr <= radius) * 0.5 + (arr <= radius + 1) * 0.25
-    )
+    return arr <= radius
 
 
 # %%
 eps_bg = 1
 eps_fg = 12
 dx = 40
-wlen = dx * 20
+wlen = dx * 30
 
 k0 = omega = 2 * onp.pi / wlen
 basis = tr.SphericalWaveBasis.default(3)
 # print(basis)
-num_pixels = 80
-R = 15  # Radius of the sphere
+num_pixels = 50  # 130
+R = 5  # Radius of the sphere
 print(f"Radius: {R}")
 shape = (num_pixels,) * 3
 
@@ -123,11 +125,14 @@ params = jaxwell.Params(
     max_iters=int(1e6),
 )
 
-sphere = onp.array(structure(R, shape, center=cent / dx))
-eps_sphere = [
-    sphere * (eps_fg - eps_bg) + eps_bg
-] * 3  # not super accurate (TODO subpixel smoothing)
-mode = basis[3]
+eps_sphere = []
+for component in range(3):
+    shift = np.ones(3)
+    shift = shift.at[component].set(0.5)
+
+    shifted_sphere = onp.array(structure(R, shape, center=cent / dx + shift))
+    eps_sphere.append(shifted_sphere * (eps_fg - eps_bg) + eps_bg)
+mode = basis[1]
 # field_inc = tr.special.vsw_rA(mode[1], mode[2], *positions_spherical, mode[3])
 field_inc_sph = tr.special.vsw_rN(mode[1], mode[2], *positions_spherical)
 
@@ -147,7 +152,9 @@ field_inc = onp.moveaxis(field_inc, -1, 0)
 plot_field(field_inc_sph, vmax=0.3, name="inc_sph", abs=True)
 plot_field(field_inc, vmax=0.3, name="inc", abs=False)
 # %%
-plot_field(eps_sphere, mask=False, vmax=None, name="eps")
+image = np.array(eps_sphere)[:, :, :, num_pixels // 2] / 9
+image = onp.moveaxis(image, 0, -1)
+plt.imshow(image)
 # %%
 b = (
     onp.array([-(omega**2) * (eps_sphere[0] - eps_bg)] * 3) * field_inc
@@ -159,7 +166,7 @@ z = tuple([omega**2 * eps for eps in eps_sphere])
 field_scat, err, curl = jaxwell.fdfd.solve_impl(z, b, params=params, incl_curl=True)
 
 # %%
-plot_field(field_scat, vmax=0.05, name="Escat")
+plot_field(field_scat, vmax=0.02, name="Escat")
 
 
 # %%
@@ -174,7 +181,7 @@ def curlE_dual(E):
 
 E = jaxwell.vecfield.from_tuple(field_scat)
 curl2 = jaxwell.vecfield.to_tuple(curlE_dual(E))
-plot_field(curl2, vmax=0.02, name="curl2")
+plot_field(curl2, vmax=0.005, name="curl2")
 # %%
-plot_field(curl, vmax=0.02, name="curl")
+plot_field(curl, vmax=0.005, name="curl")
 # %%
