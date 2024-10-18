@@ -2,9 +2,9 @@
 import unittest
 import numpy as onp
 from jaxwell import operators, cocg, vecfield
-from jax.config import config
+import jax
 
-config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 
 class TestSolver(unittest.TestCase):

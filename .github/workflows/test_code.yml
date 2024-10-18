@@ -57,7 +57,7 @@ jobs:
           pip install -e .[tests]
       - name: Test with pytest
         run: |
-          pytest --cov=jaxwell tests
+          pytest --cov=jaxwell jaxwell/tests
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:

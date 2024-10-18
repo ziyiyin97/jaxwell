@@ -4,9 +4,9 @@ import numpy as onp
 from jaxwell.vecfield import VecField
 from jaxwell import vecfield as vf
 import jax.numpy as np
-from jax.config import config
+import jax
 
-config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 
 class TestVecField(unittest.TestCase):

@@ -4,10 +4,9 @@ import jax.numpy as np
 import unittest
 import numpy as onp
 from jaxwell import fdfd, vecfield
-from jax.config import config
 
-config.update("jax_enable_x64", True)
-# config.update("jax_debug_nans", True)
+jax.config.update("jax_enable_x64", True)
+# jax.config.update("jax_debug_nans", True)
 
 
 class TestJaxwell(unittest.TestCase):
