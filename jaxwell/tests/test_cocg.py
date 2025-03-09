@@ -18,7 +18,7 @@ class TestSolver(unittest.TestCase):
         def A(x, z):
             return operators.operator(x, z, pre, inv_pre, ths, pml_params)
 
-        b = onp.zeros(shape, onp.complex128)
+        b = onp.zeros(shape, onp.complex64)
         b[0, 0, 5, 5, 5] = 1.0
         b = vecfield.VecField(0 * b, 0 * b, b)
         z = vecfield.zeros(shape)

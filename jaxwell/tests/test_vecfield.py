@@ -4,15 +4,11 @@ import numpy as onp
 from jaxwell.vecfield import VecField
 from jaxwell import vecfield as vf
 import jax.numpy as np
-import jax
-
-jax.config.update("jax_enable_x64", True)
-
 
 class TestVecField(unittest.TestCase):
     def test_zeros(self):
         self.assertEqual(vf.zeros((10, 20, 30)).shape, (10, 20, 30))
-        self.assertEqual(vf.zeros((10, 20, 30)).dtype, np.complex128)
+        self.assertEqual(vf.zeros((10, 20, 30)).dtype, np.complex64)
 
     def test_not_tuple(self):
         v = vf.zeros((10, 20, 30))

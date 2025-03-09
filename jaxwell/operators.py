@@ -32,7 +32,7 @@ def spatial_diff(x, axis, transpose=False, precision=jax.lax.Precision.HIGHEST):
     if x.shape[axis + 2] == 1:  # Diff along singular dimension.
         return np.zeros_like(x)
 
-    kernel = np.array(diff_kernel(axis, transpose), dtype=np.complex128)
+    kernel = np.array(diff_kernel(axis, transpose), dtype=np.complex64)
     return jax.lax.conv_general_dilated(
         x, kernel, window_strides=(1, 1, 1), padding="SAME", precision=precision
     )
@@ -55,7 +55,7 @@ def scpml_coeffs(n, th, pml_params, axis, transpose=False):
         1 + 1j * s_max * (pml_dist**pml_params.m) / pml_params.w_eff
     )
     shape = tuple(n if i == axis else 1 for i in range(3))
-    return onp.reshape(coeffs, shape).astype(onp.complex128)
+    return onp.reshape(coeffs, shape).astype(onp.complex64)
 
 
 def stretched_spatial_diff(x, axis, th, pml_params, transpose=False):
@@ -65,7 +65,7 @@ def stretched_spatial_diff(x, axis, th, pml_params, transpose=False):
     else:
         coeffs = np.array(
             scpml_coeffs(x.shape[axis + 2], th, pml_params, axis, transpose),
-            np.complex128,
+            np.complex64,
         )
         return coeffs * spatial_diff(x, axis, transpose)
 

@@ -58,7 +58,7 @@ class VecField:
 
 
 def zeros(shape):
-    return VecField(*(np.zeros(shape, np.complex128) for _ in range(3)))
+    return VecField(*(np.zeros(shape, np.complex64) for _ in range(3)))
 
 
 # TODO: Check if this hack is still necessary to obtain good performance.

@@ -47,7 +47,7 @@ def solve(params, z, b):
 
     Args:
       params: `Params` options structure.
-      z: 3-tuple of `(xx, yy, zz)` arrays of type `jax.numpy.complex128`
+      z: 3-tuple of `(xx, yy, zz)` arrays of type `jax.numpy.complex64`
          corresponding to the x-, y-, and z-components of the `ω²ε` term.
       b: Same as `z` but for the `-iωJ` term.
     """
@@ -87,14 +87,14 @@ def solve_impl(
     """Implementation of a FDFD solve.
 
     Args:
-      z: 3-tuple of `(xx, yy, zz)` arrays of type `jax.numpy.complex128`
+      z: 3-tuple of `(xx, yy, zz)` arrays of type `jax.numpy.complex64`
          corresponding to the x-, y-, and z-components of the `ω²ε` term.
       b: Same as `z` but for the `-iωJ` term.
       adjoint: Solve the adjoint problem instead, default `False`.
       params: `Params` options structure.
 
     Returns:
-      `(x, errs)` where `x` is the `vecfield.VecField` of `jax.numpy.complex128`
+      `(x, errs)` where `x` is the `vecfield.VecField` of `jax.numpy.complex64`
       corresponding to the electric field `E` and `errs` is a list of errors.
     """
     shape = z[0].shape

@@ -15,18 +15,18 @@ class TestOperator(unittest.TestCase):
 
     def test_spatial_diff(self):
         onp.testing.assert_array_equal(
-            ops.spatial_diff(np.array([[[[[0, 1, 0]]]]], np.complex128), axis=2),
-            np.array([[[[[0, 1, -1]]]]], np.complex128),
+            ops.spatial_diff(np.array([[[[[0, 1, 0]]]]], np.complex64), axis=2),
+            np.array([[[[[0, 1, -1]]]]], np.complex64),
         )
         onp.testing.assert_array_equal(
             ops.spatial_diff(
-                np.array([[[[[0, 1, 0]]]]], np.complex128), axis=2, transpose=True
+                np.array([[[[[0, 1, 0]]]]], np.complex64), axis=2, transpose=True
             ),
-            np.array([[[[[1, -1, 0]]]]], np.complex128),
+            np.array([[[[[1, -1, 0]]]]], np.complex64),
         )
         onp.testing.assert_array_equal(
-            ops.spatial_diff(np.array([[[[[0, 1, 0]]]]], np.complex128), axis=1),
-            np.array([[[[[0, 0, 0]]]]], np.complex128),
+            ops.spatial_diff(np.array([[[[[0, 1, 0]]]]], np.complex64), axis=1),
+            np.array([[[[[0, 0, 0]]]]], np.complex64),
         )
 
     def test_scpml_coeffs(self):
@@ -71,7 +71,7 @@ class TestOperator(unittest.TestCase):
     def test_curl(self):
         def _point_field(axis):
             """All zero-field except for central element for component `axis`."""
-            z = onp.zeros((1, 1, 3, 3, 3), dtype=onp.complex128)
+            z = onp.zeros((1, 1, 3, 3, 3), dtype=onp.complex64)
             f = onp.zeros_like(z)
             f[0, 0, 1, 1, 1] = 1
             return tuple(f if i == axis else z for i in range(3))
@@ -115,12 +115,12 @@ class TestOperator(unittest.TestCase):
         )
 
     def test_operator(self):
-        input = np.eye(375, dtype=np.complex128)
+        input = np.eye(375, dtype=np.complex64)
         input = np.reshape(input, (375, 3, 5, 5, 5))
         input = vecfield.VecField(*np.split(input, 3, axis=1))
 
         z = vecfield.VecField(
-            *(np.ones((1, 1, 5, 5, 5), np.complex128) for _ in range(3))
+            *(np.ones((1, 1, 5, 5, 5), np.complex64) for _ in range(3))
         )
 
         pml_params = ops.PmlParams(w_eff=0.3)

@@ -5,13 +5,9 @@ import unittest
 import numpy as onp
 from jaxwell import fdfd, vecfield
 
-jax.config.update("jax_enable_x64", True)
-# jax.config.update("jax_debug_nans", True)
-
-
 class TestJaxwell(unittest.TestCase):
     def setUp(self):
-        self.b = onp.zeros((10, 10, 10), onp.complex128)
+        self.b = onp.zeros((10, 10, 10), onp.complex64)
         self.b[5, 5, 5] = 1.0
         self.b = (0 * self.b, 0 * self.b, self.b)
         self.z = (onp.zeros((10, 10, 10)),) * 3
@@ -25,7 +21,7 @@ class TestJaxwell(unittest.TestCase):
         def foo(a):
             return np.linalg.norm(a)
 
-        b = onp.zeros((10, 10, 10), onp.complex128)
+        b = onp.zeros((10, 10, 10), onp.complex64)
         grad_x = jax.grad(foo)(b)
         print(grad_x)
 
