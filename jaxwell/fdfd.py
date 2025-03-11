@@ -52,7 +52,7 @@ def solve(params, z, b):
       b: Same as `z` but for the `-iωJ` term.
     """
     x, err = solve_impl(z, b, params=params)
-    return x, err[-1]
+    return x, err
 
 
 def solve_fwd(params, z, b):
